@@ -19,26 +19,31 @@ import java.util.concurrent.TimeUnit;
  */
 public class S3U4PoolImpl implements S3U4Pool {
 
+    /** 连接池内部维护的实际数据库连接 **/
     private List<S3U4Connection> connections;
     private String jdbcDriver;
     private String jdbcUrl;
     private String jdbcUsername;
     private String jdbcPassword;
+    /** 当数据库可用连接不足时,默认扩容步长 **/
     private int stepSize;
+    /** 最大连接数 **/
     private int maxPoolSize;
+    /** 最小连接数 **/
     private int minPoolSize;
+    /** 初始连接数 **/
     private int initPoolSize;
 
     /** 默认扩容步长 **/
     private static final String default_step_size = "10";
-    /** 初始胡连接池连接数 **/
+    /** 初始连接池连接数 **/
     private static final String default_pool_init_size = "10";
     /** 默认连接池最大连接数 **/
     private static final String default_pool_max_size = "200";
     /** 默认连接池最小连接数 **/
     private static final String default_pool_min_size = "10";
 
-    /** 默认两分钟未使用的连接直接释放 **/
+    /** 默认指定时间内未使用的连接直接释放 **/
     private static final long default_release_time = 2 * 60 * 60 * 1000;
 
     /**
