@@ -4,8 +4,6 @@ import com.s3u4.jdbc.pool.S3U4Pool;
 import com.s3u4.jdbc.pool.S3U4PoolManager;
 
 import java.sql.Connection;
-import java.util.HashSet;
-import java.util.Set;
 
 /**
  * Created by Captain on 5/5/17.
@@ -13,8 +11,9 @@ import java.util.Set;
 public class S3U4PoolTest {
 
     public static void main(String[] args) {
-        S3U4Pool pool = S3U4PoolManager.getPool("code");
-        Set<String> set = new HashSet<>();
+        S3U4Pool pool = S3U4PoolManager.getPool("myKey");
+
+        // 1万个线程并发请求,查看活跃的线程数量
         for (int i = 0; i <= 10000; i++) {
             new Thread(new Runnable() {
                 @Override
@@ -26,8 +25,6 @@ public class S3U4PoolTest {
                     } catch (InterruptedException e) {
                         e.printStackTrace();
                     }
-//                    System.out.println(conn);
-                    set.add(String.valueOf(conn));
                     pool.close(conn);
                 }
             }).start();
@@ -39,11 +36,6 @@ public class S3U4PoolTest {
             // ignore
         }
 
-        set.stream().forEach(key -> {
-            System.out.println(key);
-        });
-
-        System.out.println(set.size());
         System.out.println("当前活跃的线程数量:" + pool.getActiveCount());
 
     }

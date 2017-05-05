@@ -18,8 +18,8 @@ public final class S3U4PoolManager {
     private static final Map<String,S3U4Pool> pools = new HashMap<>();
 
     /**
-     * 获取指定连接池
-     * @param key
+     * 获取指定连接池,单例获取,防止多线程数据错乱
+     * @param key   s3u4-pool.peoperties 配置文件的code
      * @return
      */
     public static S3U4Pool getPool(String key) {
