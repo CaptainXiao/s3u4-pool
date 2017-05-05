@@ -11,7 +11,7 @@ public final class S3U4Connection {
     /** 原始的数据库连接 **/
     private Connection connection;
     /** 连接是否正在使用中 **/
-    private boolean isBusy;
+    private volatile boolean isBusy;
     /** 最近一次活跃活跃时间 **/
     private long lastActiveTime;
 

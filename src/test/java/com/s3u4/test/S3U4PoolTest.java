@@ -20,7 +20,12 @@ public class S3U4PoolTest {
                 @Override
                 public void run() {
                     Connection conn = pool.getConnection();
-                    System.out.println(conn);
+//                    System.out.println(conn);
+                    try {
+                        Thread.sleep(300);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
                     set.add(String.valueOf(conn));
                     pool.close(conn);
                 }

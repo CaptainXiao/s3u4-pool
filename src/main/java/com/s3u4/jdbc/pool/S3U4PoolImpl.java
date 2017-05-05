@@ -7,9 +7,12 @@ import java.sql.Connection;
 import java.sql.Driver;
 import java.sql.DriverManager;
 import java.sql.SQLException;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
 /**
  * s3u4 连接池具体实现
@@ -36,6 +39,9 @@ public class S3U4PoolImpl implements S3U4Pool {
     /** 默认连接池最小连接数 **/
     private static final String default_pool_min_size = "10";
 
+    /** 默认两分钟未使用的连接直接释放 **/
+    private static final long default_release_time = 2 * 60 * 60;
+
     /**
      * 连接池构造器
      * @param key
@@ -45,18 +51,43 @@ public class S3U4PoolImpl implements S3U4Pool {
             throw new RuntimeException("Error Param");
         }
         try {
-            connections = new ArrayList<>();
+            // 多线程环境下遍历 list 是线程安全的
+            connections = new CopyOnWriteArrayList<>();
             init(key);
+
+            // 开启释放长时间未使用的连接定时调度任务
+            releaseSchedule();
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
     }
 
     /**
+     * 释放连接线程
+     */
+    private class ReleaseConnection implements Runnable {
+        public void run(){
+            // 默认如果
+            if ( connections.size() > initPoolSize ){
+
+            }
+        }
+    }
+
+    /**
+     * 定时任务,释放长时间未使用的数据库连接
+     * 每隔一段时间就触发释放操作
+     */
+    private void releaseSchedule(){
+        ScheduledThreadPoolExecutor exec = new ScheduledThreadPoolExecutor(1);
+        exec.scheduleAtFixedRate(new ReleaseConnection(), 1000, default_release_time, TimeUnit.MILLISECONDS);
+    }
+
+    /**
      * 判断是否有空闲的数据库连接
      * @return
      */
-    private synchronized boolean hasFreeConnection(){
+    private boolean hasFreeConnection(){
         for (S3U4Connection conn : connections){
             if ( !conn.isBusy() ){
                 return true;
@@ -68,7 +99,7 @@ public class S3U4PoolImpl implements S3U4Pool {
     /**
      * 释放连接
      */
-    public synchronized void close(Connection conn){
+    public void close(Connection conn){
         for ( S3U4Connection s3u4Conn : connections ){
             if ( s3u4Conn != null && s3u4Conn.getConnection() == conn ){
                 s3u4Conn.setBusy(false);
@@ -82,14 +113,14 @@ public class S3U4PoolImpl implements S3U4Pool {
      * @return
      */
     @Override
-    public synchronized Connection getConnection() {
+    public Connection getConnection() {
         // 获取一个空闲的数据库连接
         for ( S3U4Connection conn : connections ){
             if ( !conn.isBusy() ){
                 synchronized (this){
                     if ( !conn.isBusy() ){
-                        conn.setBusy(true);
                         conn.setLastActiveTime(System.currentTimeMillis());
+                        conn.setBusy(true);
                         return conn.getConnection();
                     }
                 }
@@ -105,7 +136,12 @@ public class S3U4PoolImpl implements S3U4Pool {
                         throw new RuntimeException("Create Connection Error",e);
                     }
                 } else {
-                    throw new RuntimeException("Max pool Size : " + maxPoolSize);
+                    // 当前可用线程已经达到最大
+                    try {
+                        this.wait(100); // 等待 100ms
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
                 }
             }
         }
@@ -117,7 +153,7 @@ public class S3U4PoolImpl implements S3U4Pool {
      * @param count
      * @throws SQLException
      */
-    private synchronized void createRealConnection(int count) throws SQLException {
+    private void createRealConnection(int count) throws SQLException {
         for ( int i = 0 ; i < count ; i++ ){
             Connection conn = DriverManager.getConnection(jdbcUrl,jdbcUsername,jdbcPassword);
             S3U4Connection pkgConn = new S3U4Connection(conn);
