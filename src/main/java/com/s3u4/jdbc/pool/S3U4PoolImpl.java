@@ -10,9 +10,10 @@ import java.sql.SQLException;
 import java.util.List;
 import java.util.Properties;
 import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * s3u4 连接池具体实现
@@ -40,7 +41,7 @@ public class S3U4PoolImpl implements S3U4Pool {
     private static final String default_pool_min_size = "10";
 
     /** 默认两分钟未使用的连接直接释放 **/
-    private static final long default_release_time = 2 * 60 * 60;
+    private static final long default_release_time = 2 * 60 * 60 * 1000;
 
     /**
      * 连接池构造器
@@ -69,7 +70,21 @@ public class S3U4PoolImpl implements S3U4Pool {
         public void run(){
             // 默认如果
             if ( connections.size() > initPoolSize ){
-
+                for ( S3U4Connection conn : connections ){
+                    if ( !conn.isBusy() && (System.currentTimeMillis() - conn.getLastActiveTime() > default_release_time) && connections.size() > initPoolSize ){
+                        synchronized (conn){
+                            if ( !conn.isBusy() ){
+                                conn.setBusy(true);
+                                try{
+                                    conn.getConnection().close();
+                                    connections.remove(conn);
+                                } catch (Exception e){
+                                    throw new RuntimeException("Close Connection Error",e);
+                                }
+                            }
+                        }
+                    }
+                }
             }
         }
     }
@@ -89,7 +104,7 @@ public class S3U4PoolImpl implements S3U4Pool {
      */
     private boolean hasFreeConnection(){
         for (S3U4Connection conn : connections){
-            if ( !conn.isBusy() ){
+            if ( conn != null && !conn.isBusy() ){
                 return true;
             }
         }
@@ -109,6 +124,15 @@ public class S3U4PoolImpl implements S3U4Pool {
     }
 
     /**
+     * 获取当前活跃的线程数量
+     * @return
+     */
+    @Override
+    public int getActiveCount() {
+        return connections.size();
+    }
+
+    /**
      * 获取一个连接
      * @return
      */
@@ -116,8 +140,8 @@ public class S3U4PoolImpl implements S3U4Pool {
     public Connection getConnection() {
         // 获取一个空闲的数据库连接
         for ( S3U4Connection conn : connections ){
-            if ( !conn.isBusy() ){
-                synchronized (this){
+            if ( conn != null && !conn.isBusy() ){
+                synchronized (conn){
                     if ( !conn.isBusy() ){
                         conn.setLastActiveTime(System.currentTimeMillis());
                         conn.setBusy(true);

@@ -15,17 +15,18 @@ public class S3U4PoolTest {
     public static void main(String[] args) {
         S3U4Pool pool = S3U4PoolManager.getPool("code");
         Set<String> set = new HashSet<>();
-        for (int i = 0; i <= 100; i++) {
+        for (int i = 0; i <= 10000; i++) {
             new Thread(new Runnable() {
                 @Override
                 public void run() {
                     Connection conn = pool.getConnection();
-//                    System.out.println(conn);
+                    System.out.println("当前活跃的线程数量:" + pool.getActiveCount());
                     try {
-                        Thread.sleep(300);
+                        Thread.sleep(10);
                     } catch (InterruptedException e) {
                         e.printStackTrace();
                     }
+//                    System.out.println(conn);
                     set.add(String.valueOf(conn));
                     pool.close(conn);
                 }
@@ -43,6 +44,7 @@ public class S3U4PoolTest {
         });
 
         System.out.println(set.size());
+        System.out.println("当前活跃的线程数量:" + pool.getActiveCount());
 
     }
 

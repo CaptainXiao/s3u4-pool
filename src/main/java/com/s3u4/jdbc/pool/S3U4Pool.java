@@ -20,4 +20,10 @@ public interface S3U4Pool {
      */
     void close(Connection conn);
 
+    /**
+     * 获取当前连接池活跃的线程数量
+     * @return
+     */
+    int getActiveCount();
+
 }
