@@ -1,6 +1,6 @@
 package com.s3u4.test;
 
-import com.s3u4.jdbc.pool.S3U4Pool;
+import com.s3u4.jdbc.pool.v1.S3U4Pool;
 import com.s3u4.jdbc.pool.S3U4PoolManager;
 
 import java.sql.Connection;

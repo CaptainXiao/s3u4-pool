@@ -1,5 +1,7 @@
 package com.s3u4.jdbc.pool;
 
+import com.s3u4.jdbc.pool.v1.S3U4PoolImpl;
+
 import java.util.HashMap;
 import java.util.Map;
 

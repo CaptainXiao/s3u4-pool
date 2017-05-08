@@ -1,5 +1,7 @@
-package com.s3u4.jdbc.pool;
+package com.s3u4.jdbc.pool.v1;
 
+import com.s3u4.jdbc.pool.S3U4Connection;
+import com.s3u4.jdbc.pool.S3U4Pool;
 import com.s3u4.util.PropertiesUtil;
 
 import java.io.InputStream;
@@ -50,7 +52,7 @@ public class S3U4PoolImpl implements S3U4Pool {
      * 连接池构造器
      * @param key
      */
-    protected S3U4PoolImpl(String key){
+    public S3U4PoolImpl(String key){
         if ( key == null || key.trim().length() < 1 ){
             throw new RuntimeException("Error Param");
         }
